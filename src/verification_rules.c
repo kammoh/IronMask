@@ -12,6 +12,25 @@
 #include "trie.h"
 #include "vectors.h"
 
+static inline int lzcnt(uint64_t v);
+static inline int lzcnt(uint64_t v) {
+    #ifdef __clang__
+    #if __has_feature(__builtin_ia32_lzcnt_u64)
+        return __builtin_ia32_lzcnt_u64(v);
+    #else
+        return v ? __builtin_clzll(v) : 64;
+    #endif
+    #else
+    #ifdef _MSC_VER
+        unsigned long index;
+        _BitScanReverse64(&index, v);
+        return v ? 63-index : 64;
+    #else
+        return __builtin_clzll(v);
+    #endif
+    #endif
+}
+
 /**********************************************************************
               Very high level description
 
@@ -347,7 +366,7 @@ static void set_gauss_rand(BitDep** deps, GaussRand* gauss_rands,
     if (dep->randoms[i]) {
       gauss_rands[idx].is_set = 1;
       gauss_rands[idx].idx    = i;
-      gauss_rands[idx].mask   = 1ULL << (63-__builtin_ia32_lzcnt_u64(dep->randoms[i]));
+      gauss_rands[idx].mask   = 1ULL << (63-lzcnt(dep->randoms[i]));
       return;
     }
   }
@@ -407,7 +426,7 @@ static int is_failure_with_randoms(const Circuit* circuit,
   for (int i = 0; i < bit_rand_len; i++) {
     uint64_t rand_elem = randoms[i];
     while (rand_elem != 0) {
-      int rand_idx_in_elem = 63-__builtin_ia32_lzcnt_u64(rand_elem);
+      int rand_idx_in_elem = 63-lzcnt(rand_elem);
       rand_elem &= ~(1ULL << rand_idx_in_elem);
       randoms_arr[randoms_arr_len++] = rand_idx_in_elem + i*64;
     }
@@ -447,9 +466,10 @@ static int is_failure_with_randoms(const Circuit* circuit,
         // if(pr) printf("real comb = %d ", real_comb[i]);
         int idx    = real_comb[i] / 64;
         // if(pr) printf(", idx = %d ", idx);
-        // int offset = 63-__builtin_ia32_lzcnt_u64(real_comb[i]);
+        // int offset = 63-lzcnt(real_comb[i]);
+        int offset = real_comb[i];
         // if(pr) printf(", offset = %d\n", offset);
-        selected_randoms[idx] |= 1ULL << real_comb[i];
+        selected_randoms[idx] |= 1ULL << offset;
       }
 
       // if(pr){
@@ -568,7 +588,7 @@ void update_mult_deps(const Circuit* c, BitDepVector** bit_deps,
   for (int i = 0; i < bit_mult_len; i++) {
     uint64_t mult_elem = curr_dep->mults[i];
     while (mult_elem != 0) {
-      int mult_idx_in_elem = __builtin_ia32_lzcnt_u64(mult_elem);
+      int mult_idx_in_elem = lzcnt(mult_elem);
       mult_elem &= ~(1ULL << (63-mult_idx_in_elem));
       int mult_idx = i * 64 + (63-mult_idx_in_elem);
       MultDependency* mult = deps->mult_deps->deps[mult_idx];
@@ -772,7 +792,7 @@ void factorize_mults(const Circuit* c, BitDep** local_deps,
     for (int j = 0; j < bit_mult_len; j++) {
       uint64_t mult_elem = dep->mults[j];
       while (mult_elem != 0) {
-        int mult_idx_in_elem = __builtin_ia32_lzcnt_u64(mult_elem);
+        int mult_idx_in_elem = lzcnt(mult_elem);
         mult_elem &= ~(1ULL << (63-mult_idx_in_elem));
         int mult_idx = j * 64 + (63-mult_idx_in_elem);
         MultDependency* mult = deps->mult_deps->deps[mult_idx];
@@ -1200,7 +1220,7 @@ int _verify_tuples(const Circuit* circuit, // The circuit
         for (int i = 0; i < bit_mult_len; i++) {
           uint64_t mult_elem = all_mults[i];
           while (mult_elem != 0) {
-            int mult_idx_in_elem = __builtin_ia32_lzcnt_u64(mult_elem);
+            int mult_idx_in_elem = lzcnt(mult_elem);
             mult_elem &= ~(1ULL << (63-mult_idx_in_elem));
             int mult_idx = i * 64 + (63-mult_idx_in_elem);
             Dependency* this_secret_shares = deps->mult_deps->deps[mult_idx]->contained_secrets;
@@ -1723,7 +1743,7 @@ static void compute_input_secrets(const Circuit* circuit, BitDep* dep, Dependenc
         mult_elem = mult_elem ^ 0xffffffffffffffff;
       }
       while (mult_elem != 0) {
-        int mult_idx_in_elem = __builtin_ia32_lzcnt_u64(mult_elem);
+        int mult_idx_in_elem = lzcnt(mult_elem);
         mult_elem &= ~(1ULL << (63-mult_idx_in_elem));
         int mult_idx = i * 64 + (63-mult_idx_in_elem);
         Dependency* this_secret_shares = circuit->deps->mult_deps->deps[mult_idx]->contained_secrets;
@@ -1749,7 +1769,7 @@ static void compute_input_secrets(const Circuit* circuit, BitDep* dep, Dependenc
       // }
     }
     while (mult_elem != 0) {
-      int mult_idx_in_elem = __builtin_ia32_lzcnt_u64(mult_elem);
+      int mult_idx_in_elem = lzcnt(mult_elem);
       mult_elem &= ~(1ULL << (63-mult_idx_in_elem));
       int mult_idx = i * 64 + (63-mult_idx_in_elem);
       Dependency* this_secret_shares = circuit->deps->mult_deps->deps[mult_idx]->contained_secrets;
@@ -2080,7 +2100,7 @@ static int is_failure_with_randoms_freeSNI_IOS(const Circuit* circuit,
   for (int i = 0; i < bit_rand_len; i++) {
     uint64_t rand_elem = randoms[i];
     while (rand_elem != 0) {
-      int rand_idx_in_elem = 63-__builtin_ia32_lzcnt_u64(rand_elem);
+      int rand_idx_in_elem = 63-lzcnt(rand_elem);
       rand_elem &= ~(1ULL << rand_idx_in_elem);
       randoms_arr[randoms_arr_len++] = rand_idx_in_elem + i*64;
     }
