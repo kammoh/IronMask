@@ -2,7 +2,7 @@
 RM = rm -f
 CFLAGS += -Wall -Wextra -O3 -march=native -mtune=native -pthread
 CFLAGS += $(shell pkg-config gmp --cflags)
-#LDFLAGS += -lm
+LDFLAGS += -lm
 LDFLAGS += $(shell pkg-config gmp --libs)
 
 SRC = circuit.c coeffs.c combinations.c constructive.c constructive-mult.c \
