@@ -14,21 +14,15 @@
 
 static inline int lzcnt(uint64_t v);
 static inline int lzcnt(uint64_t v) {
-    #ifdef __clang__
-    #if __has_feature(__builtin_ia32_lzcnt_u64)
-        return __builtin_ia32_lzcnt_u64(v);
-    #else
-        return v ? __builtin_clzll(v) : 64;
-    #endif
-    #else
-    #ifdef _MSC_VER
-        unsigned long index;
-        _BitScanReverse64(&index, v);
-        return v ? 63-index : 64;
-    #else
-        return __builtin_clzll(v);
-    #endif
-    #endif
+#if defined(__has_feature) && __has_feature(__builtin_ia32_lzcnt_u64)
+  return __builtin_ia32_lzcnt_u64(v);
+#elif defined(_MSC_VER)
+  unsigned long index;
+  _BitScanReverse64(&index, v);
+  return v ? 63-index : 64;
+#else
+  return v ? __builtin_clzll(v) : 64;
+#endif
 }
 
 /**********************************************************************
@@ -1058,7 +1052,7 @@ int _verify_tuples(const Circuit* circuit, // The circuit
                                      // (no need to add "if (secret_count == 2)" everywhere)
   Dependency secret_deps[2] = { 0 };
   int failure_count = 0;
-  uint64_t tuples_checked = 0;
+  // uint64_t tuples_checked = 0;
 
   if (comb_len == 0) {
     if (failure_callback && comb_free_space) {
@@ -1097,7 +1091,7 @@ int _verify_tuples(const Circuit* circuit, // The circuit
 
   Comb* curr_comb = init_comb(first_tuple, sub_comb_len, prefix, max_len);
   do {
-    tuples_checked++;
+    // tuples_checked++;
     first_invalid_local_deps_index = min(new_first_invalid_local_deps_index,
                                          first_invalid_local_deps_index);
 
@@ -2229,7 +2223,7 @@ int _verify_tuples_freeSNI_IOS(const Circuit* circuit, // The circuit
   }
 
   int failure_count = 0;
-  uint64_t tuples_checked = 0;
+  // uint64_t tuples_checked = 0;
 
   int local_deps_without_outs_len = 0;
   int local_deps_without_len_tmp  = 0;
@@ -2260,7 +2254,7 @@ int _verify_tuples_freeSNI_IOS(const Circuit* circuit, // The circuit
   int first_invalid_local_deps_index = 0;
 
   do {
-    tuples_checked++;
+    // tuples_checked++;
     
     local_deps_len = local_deps_len_tmp + first_invalid_local_deps_index;
     local_deps_without_outs_len = local_deps_without_len_tmp + first_invalid_local_deps_index;

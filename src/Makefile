@@ -1,6 +1,6 @@
 #CC = clang
 RM = rm -f
-CFLAGS += -Wall -Wextra -O3 -march=native -mtune=native -pthread
+CFLAGS += -Wall -Wextra -O3 -march=native -mtune=native -pthread -mlzcnt
 CFLAGS += $(shell pkg-config gmp --cflags)
 LDFLAGS += -lm
 LDFLAGS += $(shell pkg-config gmp --libs)

@@ -34,4 +34,4 @@ void add_to_hash_no_copy(HashMap map, Comb* comb, int comb_len, int generation);
 int hash_contains(HashMap map, Comb* comb, int comb_len);
 void merge_hashes(HashMap dst, HashMap src);
 int hash_size(HashMap map);
-void free_hash();
+void free_hash(HashMap map);
